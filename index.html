@@ -76,7 +76,7 @@ try{S=JSON.parse(localStorage.getItem("ledger_v1"))}catch(e){}
 if(!S||!S.wallets){S={wallets:WL.map(function(w,i){return{id:"w"+i,name:w[0],type:w[1],cur:w[1]=="usd"?"USD":"TWD",init:0}}),tx:[]}}
 function mig(){if(!S.cats)S.cats={exp:EXP.slice(),inc:INC.slice()};if(!S.budgets)S.budgets={};if(!S.stocks)S.stocks=[];
 if(!S.cc)S.cc={stmt:26,due:3,debit:(S.wallets.filter(w=>w.name=="國泰銀行")[0]||S.wallets[0]).id};
-if(S.fx===undefined)S.fx=0;if(S.bk===undefined)S.bk="";if(!S.snap)S.snap={};
+if(S.fx===undefined)S.fx=0;if(S.bk===undefined)S.bk="";if(!S.bkd)S.bkd=1;if(!S.snap)S.snap={};
 if(!S.rec){var uw=S.wallets.filter(w=>w.cur=="USD")[0];if(!S.cats.exp.some(c=>c[1]=="保險"))S.cats.exp.push(["🛡️","保險"]);S.rec=[{id:1,name:"保險（年繳）",m:12,d:31,lead:14,w:uw?uw.id:S.wallets[0].id,cat:"保險",done:0}]}}
 mig();
 var L={q:"",w:"",c:"",m:""},RM=today().slice(0,7);
@@ -131,7 +131,7 @@ h+=a.length?a.map(txRow).join(""):'<div class="empty">目前沒有明細。</div
 h+='<h2>錢包期初餘額</h2><p class="note">輸入你開始記帳當下各錢包的餘額。信用卡已刷未繳的金額請填負數。</p><div class="card">';
 S.wallets.forEach(function(w){h+='<div class="wset"><div><input data-wn="'+w.id+'" value="'+esc(w.name)+'" style="font-weight:600;padding:6px"><div class="note" style="margin:2px 0 0">'+w.cur+' <button class="del" style="font-size:12px" data-wdel="'+w.id+'">刪除</button></div></div><input type="number" inputmode="decimal" step="any" data-init="'+w.id+'" value="'+(+w.init||0)+'"></div>'});
 h+='</div><button class="btn ghost" data-wadd="1">＋ 新增錢包</button>'+setExtra()+catEditor()+'<h2>備份與還原</h2><p class="note">資料只存在這個瀏覽器裡，請定期備份。複製下方文字存到記事本或雲端筆記，需要時貼回來還原。</p>';
-h+='<div class="note">上次備份：'+(S.bk||"尚未備份")+'（超過 7 天會在首頁提醒）</div><button class="btn" data-bk="1">下載備份檔</button><label>從備份檔還原</label><input type="file" id="impf" accept=".json,application/json"><label>或使用文字備份</label><textarea id="bk" readonly></textarea><button class="btn ghost" id="cpb">複製完整備份</button><button class="btn ghost" id="csv">顯示 CSV（可貼到 Excel）</button>';
+h+='<div class="note">上次備份：'+(S.bk||"尚未備份")+'</div><label>幾天沒備份就在首頁提醒</label><input type="number" min="1" data-sf="bkd" value="'+S.bkd+'"><button class="btn" data-bk="1">備份（存到檔案／雲端硬碟）</button><label>從備份檔還原</label><input type="file" id="impf" accept=".json,application/json"><label>或使用文字備份</label><textarea id="bk" readonly></textarea><button class="btn ghost" id="cpb">複製完整備份</button><button class="btn ghost" id="csv">顯示 CSV（可貼到 Excel）</button>';
 h+='<label>還原：貼上備份文字</label><textarea id="imp" placeholder="貼上之前複製的備份"></textarea><button class="btn ghost" id="doimp">還原這份備份</button>';
 }
 $("#app").innerHTML=h;
@@ -218,9 +218,14 @@ var st=ymd(sd),du=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate()+S.cc.due)
 S.tx.forEach(t=>{if(t.w==w.id&&t.date>st){if(t.type=="exp")unb+=t.amt;if(t.type=="inc")unb-=t.amt}});
 return{w:w,dw:dw,billed:-bal(w)-unb,stmtS:st,dueS:ymd(du)}}
 function bkDays(){if(!S.bk)return null;var p=S.bk.split("-"),t=today().split("-");return Math.round((new Date(+t[0],t[1]-1,+t[2])-new Date(+p[0],p[1]-1,+p[2]))/864e5)}
-function dlBackup(){S.bk=today();save();try{var b=new Blob([JSON.stringify(S)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="ledger-backup-"+today()+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000)}catch(e){alert("下載失敗，請改用文字備份")}render()}
+function dlBackup(){var old=S.bk,name="ledger-backup-"+today()+".json",txt;S.bk=today();txt=JSON.stringify(S);
+function done(){save();render()}
+function dl(){try{var bl=new Blob([txt],{type:"application/json"}),u=URL.createObjectURL(bl),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000);done()}catch(e){S.bk=old;alert("備份失敗，請改用文字備份")}}
+try{var f=new File([txt],name,{type:"application/json"});
+if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"記帳備份"}).then(done).catch(function(err){if(err&&err.name=="AbortError")S.bk=old;else dl()});return}}catch(e){}
+dl()}
 function banners(){var h="",c=cardInfo();
-if(S.tx.length&&(!S.bk||bkDays()>=7))h+='<div class="warn"><b>💾 該備份了</b><br>'+(S.bk?'距離上次備份已 '+bkDays()+' 天。':'你還沒有備份過。')+'<br><button class="btn sm" style="margin-top:8px" data-bk="1">下載備份檔</button></div>';
+if(S.tx.length&&(!S.bk||bkDays()>=S.bkd))h+='<div class="warn"><b>💾 該備份了</b><br>'+(S.bk?'距離上次備份已 '+bkDays()+' 天。':'你還沒有備份過。')+'<br><button class="btn sm" style="margin-top:8px" data-bk="1">備份（存到檔案／雲端硬碟）</button></div>';
 if(c&&c.billed>0.5)h+='<div class="warn"><b>💳 '+esc(c.w.name)+' 本期帳單 '+fmt(c.billed)+'</b><br>'+c.stmtS.slice(5)+' 結帳，'+c.dueS.slice(5)+' 自動扣款。請確認「'+esc(c.dw.name)+'」餘額足夠（目前 '+fmt(bal(c.dw))+'）。<br><button class="btn sm" style="margin-top:8px" data-pay="1">記錄這筆繳款</button></div>';
 S.rec.forEach((r,i)=>{var d=recDue(r);if(r.done!=d.dy&&d.days<=r.lead){var w=W(r.w)||{};h+='<div class="warn"><b>🛡️ '+esc(r.name)+'：'+r.m+'/'+r.d+(d.days>=0?' 還有 '+d.days+' 天':' 已過 '+(-d.days)+' 天')+'</b><div style="display:flex;gap:6px;margin-top:8px"><input type="number" inputmode="decimal" step="any" placeholder="實際扣款金額（'+(w.cur||"")+'）" id="ra'+i+'"><button class="btn sm" data-rok="'+i+'">確認記帳</button><button class="btn ghost sm" data-rskip="'+i+'">略過</button></div></div>'}});
 return h}
@@ -268,7 +273,7 @@ document.addEventListener("change",function(e){var d=e.target.dataset,id=e.targe
 if(id=="impf"){var f=e.target.files[0];if(f){var rd=new FileReader();rd.onload=function(){try{var x=JSON.parse(rd.result);if(!x.wallets||!x.tx)throw 0;if(confirm("還原會覆蓋目前所有資料，確定嗎？")){S=x;mig();save();render()}}catch(z){alert("這不是正確的備份檔")}};rd.readAsText(f)}return}
 if(id=="lw2"){L.w=e.target.value;fillRes()}if(id=="lc"){L.c=e.target.value;fillRes()}if(id=="lm"){L.m=e.target.value;fillRes()}
 if(d&&d.wn){var v1=e.target.value.trim();if(v1){W(d.wn).name=v1;save()}else render();return}
-if(d&&d.sf){var v0=e.target.value;if(d.sf=="fx")S.fx=parseFloat(v0)||0;else if(d.sf=="debit")S.cc.debit=v0;else S.cc[d.sf]=parseInt(v0)||0;save();return}
+if(d&&d.sf){var v0=e.target.value;if(d.sf=="bkd")S.bkd=Math.max(1,parseInt(v0)||1);else if(d.sf=="fx")S.fx=parseFloat(v0)||0;else if(d.sf=="debit")S.cc.debit=v0;else S.cc[d.sf]=parseInt(v0)||0;save();return}
 if(d&&d.rf){S.rec[+d.ri][d.rf]=parseInt(e.target.value)||0;save();return}
 if(d&&d.px){var o=S.stocks.filter(x=>x.code==d.px)[0];if(o){o.px=parseFloat(e.target.value)||0;o.pxd=today();save();render()}return}
 if(!d||!d.cf)return;var l=S.cats[d.ct],c=l[+d.ci],v=e.target.value.trim();
