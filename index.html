@@ -111,7 +111,7 @@ var rs=S.stocks.map(x=>({s:x,p:pos(x.code)})).filter(r=>r.p.q>0),mv2=0,cost=0;rs
 h+='<div class="total"><small>股票市值</small><b>'+fmt(mv2)+'</b></div><div class="mrow"><span>成本 <b>'+fmt(cost)+'</b></span><span>未實現損益 <b class="'+(mv2>=cost?"inc":"exp")+'">'+fmt(mv2-cost)+'</b></span></div>';
 h+='<h2>持股（在右側填入今日收盤價）</h2><div class="card">';
 h+=rs.length?rs.map(r=>{var x=r.s,q=r.p.q,a=r.p.a,v=q*(+x.px||0),pl=v-q*a;return'<div class="row"><div class="mid"><div>'+esc(x.code+(x.name!=x.code?" "+x.name:""))+'</div><div>'+fmt(q)+' 股 · 均價 '+fmt(a)+'</div><div>'+(x.px?'市值 '+fmt(v)+' · <span class="'+(pl>=0?"inc":"exp")+'">'+(pl>=0?"+":"")+fmt(pl)+'</span>':'請輸入收盤價')+(x.pxd?' · '+x.pxd.slice(5):'')+'</div></div><input type="number" inputmode="decimal" step="any" style="width:84px;padding:6px;text-align:right" data-px="'+esc(x.code)+'" value="'+(x.px||"")+'" placeholder="收盤價"><button class="del" data-hold="'+esc(x.code)+'" aria-label="修改">✎</button><button class="del" data-sdel="'+esc(x.code)+'" aria-label="刪除">✕</button></div>'}).join(""):'<div class="empty">還沒有持股。按下方新增現有持股，或用 + 記一筆買股。</div>';
-h+='</div><button class="btn ghost" data-hold="">＋ 新增現有持股</button><p class="note">均價以成交價計算，不含手續費；手續費和證交稅會計入報表的「投資成本」。賣出後的已實現損益目前沒有統計。</p>';
+h+='</div><button class="btn ghost" data-hold="">＋ 新增現有持股</button><p class="note">均價含買進手續費；手續費和證交稅會計入報表的「投資成本」。賣出後的已實現損益目前沒有統計。</p>';
 }else if(tab=="report"){
 var sp=spentBy(RM),tot=0,inc=0;Object.keys(sp).forEach(k=>tot+=sp[k]);S.tx.forEach(t=>{if(t.date.slice(0,7)==RM)inc+=incOf(t)});
 h+='<div class="mn"><button data-m="-1">‹</button><h2 style="margin:0;color:var(--ink)">'+RM.replace("-","年")+'月</h2><button data-m="1">›</button></div>';
@@ -144,7 +144,7 @@ var F=null;
 function openSheet(){
 F={type:"exp",cat:"餐飲",w:S.wallets[0].id,to:S.wallets[1].id,date:today()};
 var bg=document.createElement("div");bg.className="sheet-bg";bg.id="sbg";
-bg.innerHTML='<div class="sheet"><div id="fq"></div><div class="seg" id="seg"><button data-t="exp" class="on">支出</button><button data-t="inc">收入</button><button data-t="tr">轉帳</button><button data-t="buy">買股</button><button data-t="sell">賣股</button><button data-t="div">股利</button></div><label id="la">金額</label><input class="big" id="fa" type="number" inputmode="decimal" step="any" placeholder="0"><div id="fc"></div><div id="fk"><label>股票代號</label><input id="fcode" list="dl" placeholder="例如 2330"><datalist id="dl"></datalist><label>名稱（選填）</label><input id="fname"><div id="fqp"><label>股數</label><input id="fqty" type="number" inputmode="decimal" step="any"><label>成交價（每股）</label><input id="fpx" type="number" inputmode="decimal" step="any"><label>手續費（券商實際金額）</label><input id="ffee" type="number" inputmode="decimal" step="any"><div id="ftx"><label>證交稅（券商實際金額）</label><input id="ftax" type="number" inputmode="decimal" step="any"></div></div><div id="fdv"><label>配股股數（選填）</label><input id="fsh" type="number" inputmode="decimal" step="any"></div></div><label id="lw">錢包</label><select id="fw"></select><div id="ft"><label>轉入錢包</label><select id="fto"></select><label>轉入金額（跨幣別時才填，例如換美金）</label><input id="fta" type="number" inputmode="decimal" step="any"></div><label>日期</label><input type="date" id="fd"><label>備註（選填）</label><input id="fn" placeholder="例如：早餐"><button class="btn" id="fs">儲存</button><button class="btn ghost" id="fx">取消</button></div>';
+bg.innerHTML='<div class="sheet"><div id="fq"></div><div class="seg" id="seg"><button data-t="exp" class="on">支出</button><button data-t="inc">收入</button><button data-t="tr">轉帳</button><button data-t="buy">買股</button><button data-t="sell">賣股</button><button data-t="div">股利</button></div><label id="la">金額</label><input class="big" id="fa" type="number" inputmode="decimal" step="any" placeholder="0"><div id="fc"></div><div id="fk"><label>股票代號</label><input id="fcode" list="dl" placeholder="例如 2330"><datalist id="dl"></datalist><label>名稱（選填）</label><input id="fname"><div id="fqp"><label>股數</label><input id="fqty" type="number" inputmode="decimal" step="any"><label>成交價（每股）</label><input id="fpx" type="number" inputmode="decimal" step="any"><label>手續費（券商實際金額）</label><input id="ffee" type="number" inputmode="decimal" step="any"><div id="ftb"><label>或填實際扣款總額（填了會自動算出手續費）</label><input id="ftot" type="number" inputmode="decimal" step="any"></div><div id="ftx"><label>證交稅（券商實際金額）</label><input id="ftax" type="number" inputmode="decimal" step="any"></div></div><div id="fdv"><label>配股股數（選填）</label><input id="fsh" type="number" inputmode="decimal" step="any"></div></div><label id="lw">錢包</label><select id="fw"></select><div id="ft"><label>轉入錢包</label><select id="fto"></select><label>轉入金額（跨幣別時才填，例如換美金）</label><input id="fta" type="number" inputmode="decimal" step="any"></div><label>日期</label><input type="date" id="fd"><label>備註（選填）</label><input id="fn" placeholder="例如：早餐"><button class="btn" id="fs">儲存</button><button class="btn ghost" id="fx">取消</button></div>';
 document.body.appendChild(bg);
 var opts=S.wallets.map(function(w){return'<option value="'+w.id+'">'+esc(w.name)+'</option>'}).join("");
 $("#fw").innerHTML=opts;$("#fto").innerHTML=opts;$("#fto").value=F.to;$("#fd").value=F.date;
@@ -152,7 +152,7 @@ drawCats();drawQuick();$("#dl").innerHTML=S.stocks.map(x=>'<option value="'+esc(
 }
 function drawCats(){
 var t=F.type;var st=t=="buy"||t=="sell"||t=="div";$("#ft").style.display=t=="tr"?"block":"none";$("#fc").style.display=t=="tr"||st?"none":"block";$("#lw").textContent=t=="tr"?"轉出錢包":st?"證券戶":"錢包";
-$("#fk").style.display=st?"block":"none";$("#fqp").style.display=t=="div"?"none":"block";$("#ftx").style.display=t=="sell"?"block":"none";$("#fdv").style.display=t=="div"?"block":"none";$("#la").style.display=$("#fa").style.display=st&&t!="div"?"none":"block";$("#la").textContent=t=="div"?"現金股利金額（沒有可留空）":"金額";
+$("#fk").style.display=st?"block":"none";$("#ftb").style.display=t=="buy"?"block":"none";$("#fqp").style.display=t=="div"?"none":"block";$("#ftx").style.display=t=="sell"?"block":"none";$("#fdv").style.display=t=="div"?"block":"none";$("#la").style.display=$("#fa").style.display=st&&t!="div"?"none":"block";$("#la").textContent=t=="div"?"現金股利金額（沒有可留空）":"金額";
 if(st){var bw=S.wallets.filter(w=>w.type=="broker")[0];if(bw)$("#fw").value=bw.id}
 
 var l=t=="inc"?S.cats.inc:S.cats.exp;if(t!="tr"&&!l.some(function(c){return c[1]==F.cat}))F.cat=l[0][1];
@@ -183,7 +183,7 @@ function incOf(t){return t.type=="inc"?t.amt*fxOf(t):t.type=="div"?(t.cash||0):0
 function costOf(t){return t.type=="exp"?t.amt*fxOf(t):(t.type=="buy"||t.type=="sell")?(t.fee||0)+(t.tax||0):0}
 function pos(code){var s=S.stocks.filter(x=>x.code==code)[0]||{},q=+s.q0||0,a=+s.a0||0;
 S.tx.filter(t=>t.code==code).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:x.id-y.id).forEach(t=>{var n;
-if(t.type=="buy"){n=q+t.qty;a=n?(q*a+t.qty*t.price)/n:0;q=n}else if(t.type=="sell")q-=t.qty;else if(t.type=="div"&&t.shares){n=q+t.shares;a=n?q*a/n:0;q=n}});
+if(t.type=="buy"){n=q+t.qty;a=n?(q*a+t.qty*t.price+(t.fee||0))/n:0;q=n}else if(t.type=="sell")q-=t.qty;else if(t.type=="div"&&t.shares){n=q+t.shares;a=n?q*a/n:0;q=n}});
 return{q:q,a:a}}
 function stockMV(){var v=0;S.stocks.forEach(x=>v+=pos(x.code).q*(+x.px||0));return v}
 function sRow(t){var w=W(t.w)||{},a=cashOf(t),s=S.stocks.filter(x=>x.code==t.code)[0],nm=t.code+(s&&s.name!=t.code?" "+s.name:"");
@@ -194,13 +194,13 @@ function saveStock(){var ty=F.type,code=$("#fcode").value.trim(),n=k=>parseFloat
 if(!code){$("#fcode").focus();return}
 var t={id:Date.now(),type:ty,w:$("#fw").value,code:code,date:$("#fd").value||today(),note:$("#fn").value.trim()};
 if(ty=="div"){t.cash=n("fa");t.shares=n("fsh");if(!(t.cash>0||t.shares>0)){alert("請輸入現金股利或配股股數");return}}
-else{t.qty=n("fqty");t.price=n("fpx");t.fee=n("ffee");t.tax=ty=="sell"?n("ftax"):0;if(!(t.qty>0&&t.price>0)){alert("請輸入股數與成交價");return}
+else{t.qty=n("fqty");t.price=n("fpx");t.fee=n("ffee");if(ty=="buy"&&n("ftot")>0){t.fee=Math.round((n("ftot")-t.qty*t.price)*100)/100;if(t.fee<0){alert("總額小於股數×成交價，請檢查");return}}t.tax=ty=="sell"?n("ftax"):0;if(!(t.qty>0&&t.price>0)){alert("請輸入股數與成交價");return}
 if(ty=="sell"&&t.qty>pos(code).q){alert("賣出股數超過目前持有的 "+pos(code).q+" 股");return}}
 var s=S.stocks.filter(x=>x.code==code)[0],nm=$("#fname").value.trim();
 if(!s){S.stocks.push({code:code,name:nm||code,q0:0,a0:0,px:t.price||0,pxd:today()})}else if(nm)s.name=nm;
 S.tx.push(t);save();closeSheet();render()}
 function openHold(code){var s=S.stocks.filter(x=>x.code==code)[0]||{},bg=document.createElement("div");bg.className="sheet-bg";bg.id="sbg";
-bg.innerHTML='<div class="sheet"><h2 style="margin-top:0">起始持股</h2><p class="note">輸入目前已持有的股票，不會動到任何錢包餘額。之後的買賣請用 + 記錄。</p><label>股票代號</label><input id="hc" value="'+esc(s.code||"")+'"><label>名稱（選填）</label><input id="hn" value="'+esc(s.name||"")+'"><label>持有股數</label><input id="hq" type="number" inputmode="decimal" value="'+(s.q0||"")+'"><label>買進均價（每股）</label><input id="ha" type="number" inputmode="decimal" step="any" value="'+(s.a0||"")+'"><button class="btn" id="hs">儲存</button><button class="btn ghost" id="fx">取消</button></div>';
+bg.innerHTML='<div class="sheet"><h2 style="margin-top:0">起始持股</h2><p class="note">輸入目前已持有的股票，不會動到任何錢包餘額。之後的買賣請用 + 記錄。</p><label>股票代號</label><input id="hc" value="'+esc(s.code||"")+'"><label>名稱（選填）</label><input id="hn" value="'+esc(s.name||"")+'"><label>持有股數</label><input id="hq" type="number" inputmode="decimal" value="'+(s.q0||"")+'"><label>買進均價（每股，不含手續費）</label><input id="ha" type="number" inputmode="decimal" step="any" value="'+((s.in?s.in.a:s.a0)||"")+'"><label>買進手續費（選填）</label><input id="hf" type="number" inputmode="decimal" step="any" value="'+((s.in&&s.in.f)||"")+'"><label>或填總花費（含手續費，填了就以這個為準）</label><input id="ht" type="number" inputmode="decimal" step="any" value="'+((s.in&&s.in.t)||"")+'"><button class="btn" id="hs">儲存</button><button class="btn ghost" id="fx">取消</button></div>';
 document.body.appendChild(bg)}
 function totalTW(){var t=0;S.wallets.forEach(w=>{var b=bal(w);t+=w.cur=="TWD"?b:b*(S.fx||0)});return t+stockMV()}
 function snap(){var t=Math.round(totalTW()),d=today();if(!t&&S.snap[d]===undefined)return;if(S.snap[d]!==t){S.snap[d]=t;save()}}
@@ -247,7 +247,7 @@ if(t.dataset.mv){var l=S.cats[t.dataset.ct],i=+t.dataset.ci,j=i+ +t.dataset.mv;i
 if(t.dataset.rm){var l=S.cats[t.dataset.ct],c=l[+t.dataset.ci];if(l.length<2){alert("至少要保留一個分類");return}if(confirm("刪除「"+c[1]+"」？舊記錄會保留原本的分類名稱。")){l.splice(+t.dataset.ci,1);if(t.dataset.ct=="exp")delete S.budgets[c[1]];save();render()}return}
 if(t.dataset.hold!==undefined)return openHold(t.dataset.hold);
 if(t.dataset.sdel){var c=t.dataset.sdel;if(S.tx.some(x=>x.code==c)){alert("這檔有買賣或股利記錄，請先到明細刪除那些記錄");return}if(confirm("刪除持股 "+c+"？")){S.stocks=S.stocks.filter(x=>x.code!=c);save();render()}return}
-if(t.id=="hs"){var c=$("#hc").value.trim();if(!c)return;var o=S.stocks.filter(x=>x.code==c)[0];if(!o){o={code:c,px:0};S.stocks.push(o)}o.name=$("#hn").value.trim()||o.name||c;o.q0=parseFloat($("#hq").value)||0;o.a0=parseFloat($("#ha").value)||0;save();closeSheet();render();return}
+if(t.id=="hs"){var c=$("#hc").value.trim();if(!c)return;var o=S.stocks.filter(x=>x.code==c)[0];if(!o){o={code:c,px:0};S.stocks.push(o)}o.name=$("#hn").value.trim()||o.name||c;o.q0=parseFloat($("#hq").value)||0;var ia=parseFloat($("#ha").value)||0,ifee=parseFloat($("#hf").value)||0,it=parseFloat($("#ht").value)||0;o.in={a:ia,f:ifee,t:it};o.a0=o.q0?(it>0?it:ia*o.q0+ifee)/o.q0:0;save();closeSheet();render();return}
 if(t.dataset.pay){var c=cardInfo();openSheet();F.type="tr";drawCats();$("#fw").value=c.dw.id;$("#fto").value=c.w.id;$("#fa").value=Math.round(c.billed*100)/100;$("#fd").value=c.dueS<=today()?c.dueS:today();$("#fn").value="信用卡繳款";return}
 if(t.dataset.rok!==undefined){var r=S.rec[+t.dataset.rok],a=parseFloat($("#ra"+t.dataset.rok).value);if(!(a>0)){$("#ra"+t.dataset.rok).focus();return}var d=recDue(r);S.tx.push({id:Date.now(),type:"exp",amt:a,w:r.w,cat:r.cat,note:r.name,date:ymd(d.dt)});r.done=d.dy;save();render();return}
 if(t.dataset.rskip!==undefined){var r=S.rec[+t.dataset.rskip];r.done=recDue(r).dy;save();render();return}
